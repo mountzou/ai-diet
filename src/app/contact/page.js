@@ -110,7 +110,7 @@ export default function ContactPage() {
         <div>
           <h1 className="text-3xl font-bold text-center">Contact Us</h1>
           <p className="mt-4 text-center text-gray-600">
-            Have a question or feedback? We'd love to hear from you.
+            Have a question or feedback? Wed love to hear from you.
           </p>
           {contactEmail && (
             <p className="mt-2 text-center text-gray-600">
