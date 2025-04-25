@@ -1,103 +1,138 @@
-import Image from "next/image";
+// src/app/page.js
+"use client";
 
-export default function Home() {
+import { useState, useEffect } from "react";
+import { Loader2 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { getFirestoreDb } from "@/lib/firebase";
+import { collection, getDocs } from "firebase/firestore";
+
+export default function HomePage() {
+  const { user, loading } = useAuth();
+  const [dbStatus, setDbStatus] = useState(null);
+  const [isTestingDb, setIsTestingDb] = useState(false);
+
+  const testFirestoreConnection = async () => {
+    setIsTestingDb(true);
+    try {
+      // Get Firestore instance
+      const db = await getFirestoreDb();
+      
+      // Try to access a collection (this might fail with permission error in test mode)
+      try {
+        const collectionsSnapshot = await getDocs(collection(db, "users"));
+        console.log("Collections:", collectionsSnapshot.docs.map(doc => doc.id));
+        setDbStatus({
+          connected: true,
+          message: "Successfully connected to Firestore and accessed collection"
+        });
+      } catch (collectionError) {
+        // This is expected in test mode with no collections set up
+        if (collectionError.code === 'permission-denied' || collectionError.code === 'not-found') {
+          setDbStatus({
+            connected: true,
+            message: "Connected to Firestore (expected permission error with test collection)"
+          });
+        } else {
+          throw collectionError;
+        }
+      }
+      
+      console.log("Firestore connection successful!");
+      
+    } catch (error) {
+      console.error("Firestore connection test error:", error);
+      
+      setDbStatus({
+        connected: false,
+        message: `Failed to connect to Firestore: ${error.message}`
+      });
+    } finally {
+      setIsTestingDb(false);
+    }
+  };
+
+  useEffect(() => {
+    // Auto-test the connection when the component mounts
+    testFirestoreConnection();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+      </div>
+    );
+  }
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.js
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <div className="max-w-4xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+      <div className="bg-white shadow rounded-lg p-8 text-center">
+        {user ? (
+          <div className="space-y-6">
+            <h1 className="text-3xl font-bold text-gray-900">Welcome to Your Dashboard</h1>
+            <p className="text-xl text-gray-600">
+              Hello, <span className="font-medium">{user.email}</span>!
+            </p>
+            <p className="text-gray-600">
+              Thank you for using our application. From here, you can manage your account and access your content.
+            </p>
+            <div className="pt-4">
+              <Button asChild>
+                <Link href="/account">Manage Your Account</Link>
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            <h1 className="text-3xl font-bold">Welcome to Our App</h1>
+            <p className="text-gray-600">
+              This is a secure area that requires authentication. Please use the login button in the navigation bar to access your account.
+            </p>
+          </div>
+        )}
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+        {/* Firestore Connection Status */}
+        <div className="mt-8 pt-8 border-t border-gray-200">
+          <h2 className="text-xl font-semibold mb-4">Firestore Connection Status</h2>
+          
+          {isTestingDb ? (
+            <div className="flex justify-center items-center py-4">
+              <Loader2 className="h-6 w-6 animate-spin text-blue-500 mr-2" />
+              <span>Testing connection...</span>
+            </div>
+          ) : dbStatus ? (
+            <div className={`p-4 rounded-md ${dbStatus.connected ? 'bg-green-50' : 'bg-red-50'}`}>
+              <p className={`font-medium ${dbStatus.connected ? 'text-green-800' : 'text-red-800'}`}>
+                {dbStatus.connected ? '✅ Connected' : '❌ Connection Failed'}
+              </p>
+              <p className={`text-sm mt-1 ${dbStatus.connected ? 'text-green-700' : 'text-red-700'}`}>
+                {dbStatus.message}
+              </p>
+            </div>
+          ) : (
+            <p>Initializing connection test...</p>
+          )}
+          
+          <Button 
+            onClick={testFirestoreConnection}
+            disabled={isTestingDb}
+            variant="outline"
+            className="mt-4"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+            {isTestingDb ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Testing...
+              </>
+            ) : (
+              "Test Connection Again"
+            )}
+          </Button>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      </div>
     </div>
   );
 }
