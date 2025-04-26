@@ -5,7 +5,6 @@ import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -16,31 +15,29 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import Link from "next/link";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation";
+import { useRouter } from 'next/navigation';
 import { useAuth } from "@/contexts/AuthContext";
-import {
-  createUserWithEmailAndPassword,
-  sendEmailVerification,
-} from "firebase/auth";
+import { createUserWithEmailAndPassword, sendEmailVerification } from "firebase/auth";
+import { getFirestoreDb } from "@/lib/firebase";
+import { doc, setDoc } from "firebase/firestore";
 import AuthRedirect from "@/components/AuthRedirect";
 
 // Define the validation schema using zod
-const formSchema = z
-  .object({
-    email: z.string().email({ message: "Please enter a valid email address" }),
-    password: z.string().min(8, {
-      message: "Password must be at least 8 characters long",
-    }),
-    confirmPassword: z.string().min(8, {
-      message: "Password must be at least 8 characters long",
-    }),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords do not match",
-    path: ["confirmPassword"],
-  });
+const formSchema = z.object({
+  email: z.string().email({ message: "Please enter a valid email address" }),
+  password: z.string().min(8, {
+    message: "Password must be at least 8 characters long",
+  }),
+  confirmPassword: z.string().min(8, {
+    message: "Password must be at least 8 characters long",
+  }),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords do not match",
+  path: ["confirmPassword"],
+});
 
 export default function RegisterPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -65,7 +62,7 @@ export default function RegisterPage() {
     }
 
     setIsSubmitting(true);
-
+    
     try {
       // Create user with email and password
       const userCredential = await createUserWithEmailAndPassword(
@@ -73,36 +70,53 @@ export default function RegisterPage() {
         values.email,
         values.password
       );
-
+      
+      const user = userCredential.user;
+      
       // Send verification email
-      await sendEmailVerification(userCredential.user);
-
-      // Sign out the user immediately
+      await sendEmailVerification(user);
+      
+      // Create user document in Firestore (empty document)
+      try {
+        const db = await getFirestoreDb();
+        
+        // Create an empty document with the user's ID as the document ID
+        await setDoc(doc(db, "users", user.uid), {});
+        
+        console.log("User document created in Firestore");
+      } catch (firestoreError) {
+        console.error("Error creating user document:", firestoreError);
+        // We don't want to fail the registration if Firestore fails
+        // Just log it and continue
+      }
+      
+      // Sign out the user immediately after registration
       await auth.signOut();
-
+      
       // User created successfully
       toast.success("Account created successfully!", {
-        description:
-          "We've sent a verification email to your address. Please check your inbox and verify your email before logging in.",
+        description: "We've sent a verification email to your address. Please check your inbox."
       });
-
+      
       // Redirect to login page after successful registration
       setTimeout(() => {
-        router.push("/login");
-      }, 1000);
+        router.push('/login');
+      }, 2000);
+      
     } catch (error) {
       console.error("Registration error:", error);
-
+      
       // Handle specific Firebase errors
-      if (error.code === "auth/email-already-in-use") {
+      if (error.code === 'auth/email-already-in-use') {
         toast.error("This email is already registered");
-      } else if (error.code === "auth/invalid-email") {
+      } else if (error.code === 'auth/invalid-email') {
         toast.error("Invalid email address");
-      } else if (error.code === "auth/weak-password") {
+      } else if (error.code === 'auth/weak-password') {
         toast.error("Password is too weak");
       } else {
         toast.error("Registration failed: " + error.message);
       }
+      
     } finally {
       setIsSubmitting(false);
     }
@@ -118,15 +132,12 @@ export default function RegisterPage() {
             </h2>
             <p className="mt-2 text-center text-sm text-gray-600">
               Already have an account?{" "}
-              <Link
-                href="/login"
-                className="font-medium text-blue-600 hover:text-blue-500"
-              >
+              <Link href="/login" className="font-medium text-blue-600 hover:text-blue-500">
                 Sign in
               </Link>
             </p>
           </div>
-
+          
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <FormField
@@ -136,17 +147,17 @@ export default function RegisterPage() {
                   <FormItem>
                     <FormLabel>Email address</FormLabel>
                     <FormControl>
-                      <Input
-                        type="email"
-                        placeholder="Email address"
-                        {...field}
+                      <Input 
+                        type="email" 
+                        placeholder="Email address" 
+                        {...field} 
                       />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-
+              
               <FormField
                 control={form.control}
                 name="password"
@@ -154,17 +165,17 @@ export default function RegisterPage() {
                   <FormItem>
                     <FormLabel>Password</FormLabel>
                     <FormControl>
-                      <Input
-                        type="password"
-                        placeholder="Password"
-                        {...field}
+                      <Input 
+                        type="password" 
+                        placeholder="Password" 
+                        {...field} 
                       />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-
+              
               <FormField
                 control={form.control}
                 name="confirmPassword"
@@ -172,20 +183,20 @@ export default function RegisterPage() {
                   <FormItem>
                     <FormLabel>Confirm Password</FormLabel>
                     <FormControl>
-                      <Input
-                        type="password"
-                        placeholder="Confirm Password"
-                        {...field}
+                      <Input 
+                        type="password" 
+                        placeholder="Confirm Password" 
+                        {...field} 
                       />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-
-              <Button
-                type="submit"
-                className="w-full"
+              
+              <Button 
+                type="submit" 
+                className="w-full" 
                 disabled={isSubmitting || !auth}
               >
                 {isSubmitting ? (

@@ -4,7 +4,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import { LogOut, Loader2, User } from "lucide-react";
+import { LogOut, Loader2, User, Settings } from "lucide-react";
 
 export default function Navbar() {
   const { user, loading, isAuthenticated, signOut } = useAuth();
@@ -31,6 +31,7 @@ export default function Navbar() {
         </div>
 
         {/* Auth buttons on the right */}
+
         {loading ? (
           <Button disabled variant="ghost">
             <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -39,8 +40,14 @@ export default function Navbar() {
         ) : isAuthenticated ? (
           <div className="flex items-center space-x-4">
             <Button asChild variant="ghost" size="sm">
-              <Link href="/account">
+              <Link href="/profile">
                 <User className="h-4 w-4 mr-2" />
+                Profile
+              </Link>
+            </Button>
+            <Button asChild variant="ghost" size="sm">
+              <Link href="/account">
+                <Settings className="h-4 w-4 mr-2" />
                 Account
               </Link>
             </Button>
