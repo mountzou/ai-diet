@@ -149,7 +149,6 @@ export default function WeightTracker() {
                 <DateTimePicker
                   value={selectedDate}
                   onChange={setSelectedDate}
-                  hourCycle={24}
                 />
                 <p className="text-xs text-muted-foreground mt-2">
                   Select when this weight was measured.
