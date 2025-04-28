@@ -118,7 +118,7 @@ export default function Navbar() {
           </nav>
 
           {/* Auth actions */}
-          <div className="border-t py-6 px-4 flex flex-col space-y-4">
+          <div className="border-t py-16 px-12 flex flex-col space-y-5">
             {loading ? (
               <Button disabled variant="ghost">
                 <Loader2 className="animate-spin h-4 w-4 mr-2" />
