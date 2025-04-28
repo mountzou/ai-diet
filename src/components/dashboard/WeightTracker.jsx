@@ -24,7 +24,7 @@ export default function WeightTracker() {
   const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [weight, setWeight] = useState(70); // Default weight in kg
-  const [selectedDateTime, setSelectedDateTime] = useState(new Date()); // Default to current date
+  const [selectedDate, setSelectedDate] = useState(new Date());
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Function to adjust weight value
@@ -58,7 +58,7 @@ export default function WeightTracker() {
       const db = await getFirestoreDb();
       
       // Create a timestamp string that preserves the exact time without timezone conversion
-      const timestampId = createTimestampString(selectedDateTime);
+      const timestampId = createTimestampString(selectedDate);
       
       const weightDocRef = doc(db, "users", user.uid, "weight_progress", timestampId);
       
@@ -83,7 +83,7 @@ export default function WeightTracker() {
     setIsOpen(open);
     if (open) {
       setWeight(70);
-      setSelectedDateTime(new Date());
+      setSelectedDate(new Date());
     }
   };
   
@@ -144,16 +144,15 @@ export default function WeightTracker() {
                 </Button>
               </div>
               
-              {/* Date and Time Picker */}
-              <div className="flex flex-col space-y-2 mb-6">
-                <label className="text-sm font-medium">Measurement Date & Time</label>
-                <DateTimePicker 
-                  date={selectedDateTime} 
-                  setDate={setSelectedDateTime} 
-                  maxDate={new Date()} 
+              <div className="mb-6">
+                <h3 className="text-sm font-medium mb-2">Measurement Date & Time</h3>
+                <DateTimePicker
+                  value={selectedDate}
+                  onChange={setSelectedDate}
+                  hourCycle={24}
                 />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Time will be saved exactly as shown, with no timezone adjustment.
+                <p className="text-xs text-muted-foreground mt-2">
+                  Select when this weight was measured.
                 </p>
               </div>
             </div>
@@ -161,7 +160,7 @@ export default function WeightTracker() {
             <DrawerFooter>
               <Button 
                 onClick={saveWeight} 
-                disabled={isSubmitting || !selectedDateTime}
+                disabled={isSubmitting}
               >
                 {isSubmitting ? (
                   <>
