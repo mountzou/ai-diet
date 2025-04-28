@@ -10,14 +10,9 @@ import { Menu, X, LogOut, Loader2, User, Settings } from "lucide-react";
 
 export default function Navbar() {
   const { loading, isAuthenticated, signOut } = useAuth();
-  const router = useRouter();
   const [mobileOpen, setMobileOpen] = React.useState(false);
 
   const handleClose = () => setMobileOpen(false);
-  const navigate = (href) => {
-    router.push(href);
-    handleClose();
-  };
 
   return (
     <nav className="w-full border-b">
@@ -95,29 +90,38 @@ export default function Navbar() {
             </Button>
           </div>
 
-          {/* Nav links */}
+          {/* Nav links - IMPROVED with shadcn Button + Link pattern */}
           <nav className="flex-1 flex flex-col justify-center items-center space-y-8">
-            <button
-              onClick={() => navigate("/calendar")}
-              className="text-2xl font-medium hover:text-gray-600"
+            <Button
+              variant="ghost"
+              size="lg"
+              className="text-2xl font-medium"
+              asChild
+              onClick={handleClose}
             >
-              Calendar
-            </button>
-            <button
-              onClick={() => navigate("/faq")}
-              className="text-2xl font-medium hover:text-gray-600"
+              <Link href="/calendar">Calendar</Link>
+            </Button>
+            <Button
+              variant="ghost"
+              size="lg"
+              className="text-2xl font-medium"
+              asChild
+              onClick={handleClose}
             >
-              FAQ
-            </button>
-            <button
-              onClick={() => navigate("/contact")}
-              className="text-2xl font-medium hover:text-gray-600"
+              <Link href="/faq">FAQ</Link>
+            </Button>
+            <Button
+              variant="ghost"
+              size="lg"
+              className="text-2xl font-medium"
+              asChild
+              onClick={handleClose}
             >
-              Contact
-            </button>
+              <Link href="/contact">Contact</Link>
+            </Button>
           </nav>
 
-          {/* Auth actions */}
+          {/* Mobile nav */}
           <div className="border-t py-16 px-12 flex flex-col space-y-5">
             {loading ? (
               <Button disabled variant="ghost">
@@ -129,18 +133,24 @@ export default function Navbar() {
                 <Button
                   variant="ghost"
                   className="w-full justify-start text-lg"
-                  onClick={() => navigate("/profile")}
+                  asChild
+                  onClick={handleClose}
                 >
-                  <User className="h-5 w-5 mr-2" />
-                  Profile
+                  <Link href="/profile">
+                    <User className="h-5 w-5 mr-2" />
+                    Profile
+                  </Link>
                 </Button>
                 <Button
                   variant="ghost"
                   className="w-full justify-start text-lg"
-                  onClick={() => navigate("/account")}
+                  asChild
+                  onClick={handleClose}
                 >
-                  <Settings className="h-5 w-5 mr-2" />
-                  Account
+                  <Link href="/account">
+                    <Settings className="h-5 w-5 mr-2" />
+                    Account
+                  </Link>
                 </Button>
                 <Button
                   variant="outline"
@@ -157,9 +167,10 @@ export default function Navbar() {
             ) : (
               <Button
                 className="w-full text-lg"
-                onClick={() => navigate("/login")}
+                asChild
+                onClick={handleClose}
               >
-                Login
+                <Link href="/login">Login</Link>
               </Button>
             )}
           </div>

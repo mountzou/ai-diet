@@ -2,6 +2,7 @@
 "use client";
 
 import "./globals.css";
+import Announcement from "@/components/Announcement";
 import Footer from "@/components/Footer";
 import Navbar from "@/components/Navbar";
 import { Toaster } from "@/components/ui/sonner";
@@ -14,6 +15,7 @@ export default function RootLayout({ children }) {
         <AuthProvider>
           <Navbar />
           <main className="flex-grow">
+            <Announcement />
             {children}
           </main>
           <Footer />
