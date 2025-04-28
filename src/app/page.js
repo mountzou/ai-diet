@@ -8,6 +8,8 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { getFirestoreDb } from "@/lib/firebase";
 import { collection, getDocs } from "firebase/firestore";
+import WeightTracker from "@/components/dashboard/WeightTracker";
+import WeightHistory from "@/components/dashboard/WeightHistory";
 
 export default function HomePage() {
   const { user, loading } = useAuth();
@@ -76,14 +78,6 @@ export default function HomePage() {
             <p className="text-xl text-gray-600">
               Hello, <span className="font-medium">{user.email}</span>!
             </p>
-            <p className="text-gray-600">
-              Thank you for using our application. From here, you can manage your account and access your content.
-            </p>
-            <div className="pt-4">
-              <Button asChild>
-                <Link href="/account">Manage Your Account</Link>
-              </Button>
-            </div>
           </div>
         ) : (
           <div className="space-y-6">
@@ -131,6 +125,12 @@ export default function HomePage() {
               "Test Connection Again"
             )}
           </Button>
+
+          {/* Weight Tracker Component */}
+          <WeightTracker />
+
+          {/* Weight History Component */}
+          <WeightHistory />
         </div>
       </div>
     </div>
