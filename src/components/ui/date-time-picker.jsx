@@ -62,48 +62,53 @@ export function DateTimePicker({ date, setDate, maxDate }) {
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-0">
-        <div className="sm:flex">
+      <PopoverContent 
+        className="w-auto p-0" 
+        align="start"
+        side="bottom"
+        sideOffset={4}
+        alignOffset={0}
+        avoidCollisions={true}
+        style={{ zIndex: 100 }}
+      >
+        <div className="flex flex-col md:flex-row">
           <Calendar
             mode="single"
             selected={date}
             onSelect={handleDateSelect}
             initialFocus
             disabled={maxDate ? (date) => date > maxDate : undefined}
+            className="rounded-md border"
           />
-          <div className="flex flex-col sm:flex-row sm:h-[300px] divide-y sm:divide-y-0 sm:divide-x">
-            <ScrollArea className="w-16 sm:w-auto">
-              <div className="flex sm:flex-col p-2">
-                {hours.map((hour) => (
-                  <Button
-                    key={hour}
-                    size="icon"
-                    variant={date && date.getHours() === hour ? "default" : "ghost"}
-                    className="sm:w-full shrink-0 aspect-square"
-                    onClick={() => handleTimeChange("hour", hour.toString())}
-                  >
-                    {hour.toString().padStart(2, '0')}
-                  </Button>
-                ))}
-              </div>
-              <ScrollBar orientation="horizontal" className="sm:hidden" />
-            </ScrollArea>
-            <ScrollArea className="w-16 sm:w-auto">
-              <div className="flex sm:flex-col p-2">
-                {minutes.map((minute) => (
-                  <Button
-                    key={minute}
-                    size="icon"
-                    variant={date && date.getMinutes() === minute ? "default" : "ghost"}
-                    className="sm:w-full shrink-0 aspect-square"
-                    onClick={() => handleTimeChange("minute", minute.toString())}
-                  >
-                    {minute.toString().padStart(2, '0')}
-                  </Button>
-                ))}
-              </div>
-              <ScrollBar orientation="horizontal" className="sm:hidden" />
-            </ScrollArea>
+          <div className="flex flex-row md:flex-col border-t md:border-t-0 md:border-l">
+            <div className="grid grid-cols-4 gap-1 p-2">
+              <div className="text-xs text-center font-medium pb-1 col-span-4">Hour</div>
+              {hours.map((hour) => (
+                <Button
+                  key={hour}
+                  size="sm"
+                  variant={date && date.getHours() === hour ? "default" : "ghost"}
+                  className="h-8 w-8 p-0 font-normal"
+                  onClick={() => handleTimeChange("hour", hour.toString())}
+                >
+                  {hour.toString().padStart(2, '0')}
+                </Button>
+              ))}
+            </div>
+            <div className="grid grid-cols-3 gap-1 p-2 border-l md:border-l-0 md:border-t">
+              <div className="text-xs text-center font-medium pb-1 col-span-3">Minute</div>
+              {minutes.map((minute) => (
+                <Button
+                  key={minute}
+                  size="sm"
+                  variant={date && date.getMinutes() === minute ? "default" : "ghost"}
+                  className="h-8 w-8 p-0 font-normal"
+                  onClick={() => handleTimeChange("minute", minute.toString())}
+                >
+                  {minute.toString().padStart(2, '0')}
+                </Button>
+              ))}
+            </div>
           </div>
         </div>
       </PopoverContent>
