@@ -1,4 +1,4 @@
-// src/components/dashboard/WeightTracker.jsx
+// src/components/dashboard/FatTracker.jsx
 "use client";
 
 import { useState } from "react";
@@ -20,16 +20,16 @@ import {
 } from "@/components/ui/drawer";
 import { DateTimePicker } from "@/components/ui/date-time-picker";
 
-export default function WeightTracker() {
+export default function FatTracker() {
   const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
-  const [weight, setWeight] = useState(70); // Default weight in kg
+  const [fat, setFat] = useState(10); // Default fat in %
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // Function to adjust weight value
-  const adjustWeight = (adjustment) => {
-    setWeight(Math.max(30, Math.min(250, weight + adjustment)));
+  // Function to adjust fat value
+  const adjustFat = (adjustment) => {
+    setFat(Math.max(5, Math.min(35, fat + adjustment)));
   };
   
   // Function to create a timestamp string without timezone conversion
@@ -45,10 +45,10 @@ export default function WeightTracker() {
     return `${year}-${month}-${day}T${hours}_${minutes}_00-000`;
   };
   
-  // Function to save weight to Firestore
-  const saveWeight = async () => {
+  // Function to save fat to Firestore
+  const saveFat = async () => {
     if (!user) {
-      toast.error("You must be logged in to track your weight");
+      toast.error("You must be logged in to track your fat");
       return;
     }
     
@@ -60,19 +60,19 @@ export default function WeightTracker() {
       // Create a timestamp string that preserves the exact time without timezone conversion
       const timestampId = createTimestampString(selectedDate);
       
-      const weightDocRef = doc(db, "users", user.uid, "weight_progress", timestampId);
+      const fatDocRef = doc(db, "users", user.uid, "fat_progress", timestampId);
       
-      // Add a new document with only the weight
-      await setDoc(weightDocRef, {
-        weight: weight
+      // Add a new document with only the fat
+      await setDoc(fatDocRef, {
+        fat: fat
       });
       
-      toast.success("Weight measurement saved successfully!");
+      toast.success("Fat measurement saved successfully!");
       setIsOpen(false);
       
     } catch (error) {
-      console.error("Error saving weight measurement:", error);
-      toast.error("Failed to save weight measurement");
+      console.error("Error saving fat measurement:", error);
+      toast.error("Failed to save fat measurement");
     } finally {
       setIsSubmitting(false);
     }
@@ -82,7 +82,7 @@ export default function WeightTracker() {
   const handleOpenChange = (open) => {
     setIsOpen(open);
     if (open) {
-      setWeight(70);
+      setFat(10);
       setSelectedDate(new Date());
     }
   };
@@ -91,22 +91,22 @@ export default function WeightTracker() {
     <div className="bg-white p-6">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h2 className="text-lg font-semibold">Weight Tracker</h2>
-          <p className="text-sm text-gray-500">Track your weight progress</p>
+          <h2 className="text-lg font-semibold">Fat Tracker</h2>
+          <p className="text-sm text-gray-500">Track your fat progress</p>
         </div>
         <Scale className="h-6 w-6 text-black-500" />
       </div>
       
       <Drawer open={isOpen} onOpenChange={handleOpenChange}>
         <DrawerTrigger asChild>
-          <Button className="w-full">Add Weight Measurement</Button>
+          <Button className="w-full">Add Fat Measurement</Button>
         </DrawerTrigger>
         <DrawerContent>
           <div className="mx-auto w-full max-w-md">
             <DrawerHeader>
-              <DrawerTitle>Add Weight Measurement</DrawerTitle>
+              <DrawerTitle>Add Fat Measurement</DrawerTitle>
               <DrawerDescription>
-                Add your weight and specify when it was measured.
+                Add your fat and specify when it was measured.
               </DrawerDescription>
             </DrawerHeader>
             
@@ -116,8 +116,8 @@ export default function WeightTracker() {
                   variant="outline"
                   size="icon"
                   className="h-10 w-10 shrink-0 rounded-full"
-                  onClick={() => adjustWeight(-0.5)}
-                  disabled={weight <= 30}
+                  onClick={() => adjustFat(-0.1)}
+                  disabled={fat <= 30}
                   type="button"
                 >
                   <Minus className="h-4 w-4" />
@@ -125,18 +125,18 @@ export default function WeightTracker() {
                 </Button>
                 <div className="flex-1 text-center">
                   <div className="text-6xl font-bold tracking-tighter">
-                    {weight.toFixed(1)}
+                    {fat.toFixed(1)}
                   </div>
                   <div className="text-[0.70rem] uppercase text-muted-foreground">
-                    kilograms
+                    %
                   </div>
                 </div>
                 <Button
                   variant="outline"
                   size="icon"
                   className="h-10 w-10 shrink-0 rounded-full"
-                  onClick={() => adjustWeight(0.5)}
-                  disabled={weight >= 250}
+                  onClick={() => adjustFat(0.5)}
+                  disabled={fat >= 250}
                   type="button"
                 >
                   <Plus className="h-4 w-4" />
@@ -151,14 +151,14 @@ export default function WeightTracker() {
                   onChange={setSelectedDate}
                 />
                 <p className="text-xs text-muted-foreground mt-2">
-                  Select when this weight was measured.
+                  Select when this fat was measured.
                 </p>
               </div>
             </div>
             
             <DrawerFooter>
               <Button 
-                onClick={saveWeight} 
+                onClick={saveFat} 
                 disabled={isSubmitting}
               >
                 {isSubmitting ? (

@@ -30,7 +30,7 @@ export default function Navbar() {
         {/* Desktop nav */}
         <div className="hidden md:flex space-x-4">
           <Button variant="link" asChild>
-            <Link href="/">Home</Link>
+            <Link href="/calendar">Calendar</Link>
           </Button>
           <Button variant="link" asChild>
             <Link href="/faq">FAQ</Link>
@@ -98,10 +98,10 @@ export default function Navbar() {
           {/* Nav links */}
           <nav className="flex-1 flex flex-col justify-center items-center space-y-8">
             <button
-              onClick={() => navigate("/")}
+              onClick={() => navigate("/calendar")}
               className="text-2xl font-medium hover:text-gray-600"
             >
-              Home
+              Calendar
             </button>
             <button
               onClick={() => navigate("/faq")}
