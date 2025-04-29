@@ -4,7 +4,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Loader2, Plus, Minus, Scale } from "lucide-react";
+import { Loader2, Plus, Minus, HeartPlus } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { getFirestoreDb } from "@/lib/firebase";
 import { doc, setDoc } from "firebase/firestore";
@@ -94,7 +94,7 @@ export default function FatTracker() {
           <h2 className="text-lg font-semibold">Fat Tracker</h2>
           <p className="text-sm text-gray-500">Track your fat progress</p>
         </div>
-        <Scale className="h-6 w-6 text-black-500" />
+        <HeartPlus className="h-6 w-6 text-black-500" />
       </div>
       
       <Drawer open={isOpen} onOpenChange={handleOpenChange}>
