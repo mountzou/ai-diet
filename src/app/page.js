@@ -20,7 +20,7 @@ export default function HomePage() {
 
   return (
     <div className="max-w-6xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-      <div className="bg-white shadow rounded-lg p-8 text-center">
+      <div className="bg-white rounded-lg p-8 text-center">
         {user ? (
           <div className="space-y-6">
             <h1 className="text-3xl font-bold text-gray-900">Welcome to Your Dashboard</h1>
