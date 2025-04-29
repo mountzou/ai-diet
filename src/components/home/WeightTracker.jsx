@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { Loader2, Plus, Minus, HeartPlus } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { getFirestoreDb } from "@/lib/firebase";
-import { doc, setDoc } from "firebase/firestore";
+import { doc, setDoc, collection, Timestamp, addDoc } from "firebase/firestore";
 import {
   Drawer,
   DrawerClose,
@@ -32,20 +32,7 @@ export default function WeightTracker() {
     setWeight(Math.max(30, Math.min(250, weight + adjustment)));
   };
   
-  // Function to create a timestamp string without timezone conversion
-  const createTimestampString = (date) => {
-    // Format: YYYY-MM-DDThh:mm:00.000
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    
-    // This creates a timestamp string that preserves the exact hour/minute without timezone adjustment
-    return `${year}-${month}-${day}T${hours}_${minutes}_00-000`;
-  };
-  
-  // Function to save weight to Firestore
+  // Function to save weight to Firestore with updated schema
   const saveWeight = async () => {
     if (!user) {
       toast.error("You must be logged in to track your weight");
@@ -56,15 +43,19 @@ export default function WeightTracker() {
     
     try {
       const db = await getFirestoreDb();
+      const weightCollectionRef = collection(db, "users", user.uid, "weight_progress");
       
-      // Create a timestamp string that preserves the exact time without timezone conversion
-      const timestampId = createTimestampString(selectedDate);
+      // Create a timestamp from the selected date
+      const measurementTimestamp = Timestamp.fromDate(selectedDate);
       
-      const weightDocRef = doc(db, "users", user.uid, "weight_progress", timestampId);
-      
-      // Add a new document with only the weight
-      await setDoc(weightDocRef, {
-        weight: weight
+      // Add a new document with auto-generated ID and proper timestamp fields
+      await addDoc(weightCollectionRef, {
+        weight: weight,
+        timestamp: measurementTimestamp,
+        created_at: Timestamp.now(),
+        
+        // Optional: For backward compatibility during migration
+        legacy_format: true
       });
       
       toast.success("Weight measurement saved successfully!");

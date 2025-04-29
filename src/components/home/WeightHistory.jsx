@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { getFirestoreDb } from "@/lib/firebase";
-import { collection, getDocs, query, where, orderBy } from "firebase/firestore";
+import { collection, getDocs, query, where, orderBy, limit, Timestamp } from "firebase/firestore";
 import { Loader2, Scale, TrendingUp, TrendingDown, CalendarIcon, FilterIcon } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { 
@@ -51,12 +51,11 @@ export default function WeightHistory() {
   const [trend, setTrend] = useState({ direction: null, percentage: 0 });
   const [filterType, setFilterType] = useState("preset"); // 'preset' or 'custom'
   const [dateRange, setDateRange] = useState("10d");
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [dateRangeValue, setDateRangeValue] = useState({
     from: new Date(new Date().setDate(new Date().getDate() - 10)),
     to: new Date()
   });
-  const [allMeasurements, setAllMeasurements] = useState([]); // Store all measurements before filtering
+  const [allMeasurements, setAllMeasurements] = useState([]);
 
   const dateRangeOptions = [
     { value: "7d", label: "Last 7 days" },
@@ -150,80 +149,97 @@ export default function WeightHistory() {
         // Create a reference to the user's weight_progress subcollection
         const weightCollectionRef = collection(db, "users", user.uid, "weight_progress");
         
-        // Get all documents
-        const querySnapshot = await getDocs(weightCollectionRef);
+        // Start with a base query
+        let weightQuery;
         
-        // Format the results
-        let weightData = querySnapshot.docs
-          .map(doc => {
-            // Extract date and time from document ID
-            const timestampId = doc.id;
-            let formattedDate = "Unknown";
-            let dateObj = null;
+        if (filterType === 'preset') {
+          if (dateRange === "all") {
+            // Just get the most recent 30 measurements
+            weightQuery = query(
+              weightCollectionRef,
+              orderBy("timestamp", "desc"), // Now using timestamp field
+              limit(30)
+            );
+          } else {
+            // Get measurements from the last X days
+            const days = parseInt(dateRange);
+            const cutoffDate = subDays(new Date(), days);
             
+            weightQuery = query(
+              weightCollectionRef,
+              where("timestamp", ">=", Timestamp.fromDate(cutoffDate)),
+              orderBy("timestamp", "desc"),
+              limit(30)
+            );
+          }
+        } else if (filterType === 'custom' && dateRangeValue.from && dateRangeValue.to) {
+          // For custom range, use timestamp field for both bounds
+          const fromDate = startOfDay(dateRangeValue.from);
+          const toDate = endOfDay(dateRangeValue.to);
+          
+          weightQuery = query(
+            weightCollectionRef,
+            where("timestamp", ">=", Timestamp.fromDate(fromDate)),
+            where("timestamp", "<=", Timestamp.fromDate(toDate)), 
+            orderBy("timestamp", "desc"),
+            limit(30)
+          );
+        } else {
+          // Default: just get the most recent measurements
+          weightQuery = query(
+            weightCollectionRef,
+            orderBy("timestamp", "desc"),
+            limit(30)
+          );
+        }
+        
+        // Execute the query
+        const querySnapshot = await getDocs(weightQuery);
+        
+        // Format the results - handle both old and new document formats
+        let weightData = querySnapshot.docs.map(doc => {
+          const data = doc.data();
+          let formattedDate = "Unknown";
+          let dateObj = null;
+          
+          // Check if there's a timestamp field (new format)
+          if (data.timestamp && data.timestamp.toDate) {
+            dateObj = data.timestamp.toDate();
+            formattedDate = format(dateObj, 'MMM dd, HH:mm');
+          } else {
+            // Fall back to legacy format (parsing from document ID)
             try {
-              // Parse the timestamp ID format
+              const timestampId = doc.id;
               const match = timestampId.match(/^(\d{4}-\d{2}-\d{2})T(\d{2})_(\d{2})_/);
               if (match) {
                 const [_, datePart, hours, minutes] = match;
-                // Create a date object for the chart
                 dateObj = new Date(`${datePart}T${hours}:${minutes}:00`);
                 formattedDate = format(dateObj, 'MMM dd, HH:mm');
               }
             } catch (e) {
               console.error("Error parsing timestamp:", e);
             }
-            
-            return {
-              id: doc.id,
-              weight: doc.data().weight,
-              date: formattedDate,
-              dateObj: dateObj,
-              // Original timestamp for sorting
-              originalTimestamp: doc.id
-            };
-          })
-          // Sort by document ID (timestamp) in descending order
-          .sort((a, b) => b.originalTimestamp.localeCompare(a.originalTimestamp));
+          }
+          
+          return {
+            id: doc.id,
+            weight: data.weight,
+            date: formattedDate,
+            dateObj: dateObj,
+            // Use proper timestamp for sorting if available
+            timestamp: data.timestamp ? data.timestamp.toDate().getTime() : (dateObj ? dateObj.getTime() : 0)
+          };
+        });
         
-        // Store all measurements for reference
+        // Sort by timestamp
+        weightData.sort((a, b) => b.timestamp - a.timestamp);
+        
+        // Set filtered measurements
         setAllMeasurements(weightData);
-        
-        // Apply date filter based on filter type (preset or custom)
-        if (filterType === 'preset') {
-          // Use preset date range filter
-          if (dateRange !== "all" && weightData.length > 0) {
-            const days = parseInt(dateRange);
-            const cutoffDate = subDays(new Date(), days);
-            
-            weightData = weightData.filter(item => 
-              item.dateObj && item.dateObj >= cutoffDate
-            );
-          }
-          
-          // Limit to max 30 items for display clarity
-          weightData = dateRange === "all" 
-            ? weightData.slice(0, 30) 
-            : weightData;
-        } else if (filterType === 'custom' && dateRangeValue.from && dateRangeValue.to) {
-          // Use custom date range filter
-          const fromDate = startOfDay(dateRangeValue.from);
-          const toDate = endOfDay(dateRangeValue.to);
-          
-          weightData = weightData.filter(item => 
-            item.dateObj && 
-            item.dateObj >= fromDate && 
-            item.dateObj <= toDate
-          );
-          
-          // Limit to max 30 items for display clarity if too many match the date range
-          if (weightData.length > 30) {
-            weightData = weightData.slice(0, 30);
-          }
-        }
         
         // Calculate trend percentage if we have at least two measurements
         if (weightData.length >= 2) {
+          // The data is in descending order (newest first)
           const newestWeight = weightData[0].weight;
           const oldestWeight = weightData[weightData.length - 1].weight;
           const difference = newestWeight - oldestWeight;
