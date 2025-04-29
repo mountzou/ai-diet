@@ -3,9 +3,9 @@
 
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import WeightTracker from "@/components/dashboard/WeightTracker";
-import FatTracker from "@/components/dashboard/FatTracker";
-import WeightHistory from "@/components/dashboard/WeightHistory";
+import WeightTracker from "@/components/home/WeightTracker";
+import FatTracker from "@/components/home/FatTracker";
+import WeightHistory from "@/components/home/WeightHistory";
 
 export default function HomePage() {
   const { user, loading } = useAuth();
@@ -19,7 +19,7 @@ export default function HomePage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+    <div className="max-w-6xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
       <div className="bg-white shadow rounded-lg p-8 text-center">
         {user ? (
           <div className="space-y-6">
@@ -37,17 +37,22 @@ export default function HomePage() {
           </div>
         )}
 
-        {/* Firestore Connection Status */}
-        <div className="mt-8 pt-2  ">
+        {user && (
+          <div className="mt-8 pt-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              {/* Add Weight Component */}
+              <WeightTracker />
+              {/* Add Fat Component */}
+              <FatTracker />
+            </div>
+            
+            {/* Weight History Component - full width */}
+            <div className="mt-4">
+              <WeightHistory />
+            </div>
+          </div>
+        )}
 
-          {/* Add Weight Component */}
-          <WeightTracker />
-          {/* Add Fat Component */}
-          <FatTracker />
-
-          {/* Weight History Component */}
-          <WeightHistory />
-        </div>
       </div>
     </div>
   );
