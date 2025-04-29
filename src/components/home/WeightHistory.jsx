@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { getFirestoreDb } from "@/lib/firebase";
 import { collection, getDocs, query, where, orderBy, limit, Timestamp } from "firebase/firestore";
-import { Loader2, Scale, TrendingUp, TrendingDown, CalendarIcon, FilterIcon } from "lucide-react";
+import { Loader2, TrendingUp, TrendingDown, CalendarIcon, FilterIcon } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { 
   CartesianGrid, 
@@ -42,11 +42,13 @@ import { Button } from "@/components/ui/button";
 import { format, subDays, isWithinInterval, parseISO, startOfDay, endOfDay } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function WeightHistory() {
   const { user } = useAuth();
   const [measurements, setMeasurements] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [chartLoading, setChartLoading] = useState(true); // New state for chart-specific loading
   const [error, setError] = useState(null);
   const [trend, setTrend] = useState({ direction: null, percentage: 0 });
   const [filterType, setFilterType] = useState("preset"); // 'preset' or 'custom'
@@ -75,7 +77,10 @@ export default function WeightHistory() {
             <TabsTrigger value="custom">Custom Range</TabsTrigger>
           </TabsList>
           <TabsContent value="preset" className="mt-2">
-            <Select value={dateRange} onValueChange={setDateRange}>
+            <Select value={dateRange} onValueChange={(value) => {
+              setChartLoading(true); // Set chart to loading state when filter changes
+              setDateRange(value);
+            }}>
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Filter by date" />
               </SelectTrigger>
@@ -115,7 +120,10 @@ export default function WeightHistory() {
                   mode="range"
                   defaultMonth={dateRangeValue.from}
                   selected={dateRangeValue}
-                  onSelect={setDateRangeValue}
+                  onSelect={(value) => {
+                    setChartLoading(true); // Set chart to loading state when filter changes
+                    setDateRangeValue(value);
+                  }}
                   numberOfMonths={2}
                 />
               </PopoverContent>
@@ -143,7 +151,11 @@ export default function WeightHistory() {
       if (!user) return;
 
       try {
-        setLoading(true);
+        setChartLoading(true); // Set chart to loading state when data is being fetched
+        
+        // Save the current scroll position
+        const scrollPosition = window.scrollY;
+        
         const db = await getFirestoreDb();
         
         // Create a reference to the user's weight_progress subcollection
@@ -262,11 +274,48 @@ export default function WeightHistory() {
         setError("Failed to load weight history");
       } finally {
         setLoading(false);
+        // Add a small delay before removing the loading state to ensure smooth transition
+        setTimeout(() => {
+          setChartLoading(false);
+          
+          // Restore scroll position after a short delay to ensure DOM has updated
+          setTimeout(() => {
+            window.scrollTo({
+              top: window.scrollY,
+              behavior: 'auto' // Use 'auto' to avoid smooth scrolling which could be noticeable
+            });
+          }, 50);
+        }, 300);
       }
     };
 
     fetchMeasurements();
   }, [user, dateRange, filterType, dateRangeValue]);
+
+  // Chart Skeleton component that matches exact dimensions of the chart
+  const ChartSkeleton = () => (
+    <div className="h-[300px] w-full flex flex-col" style={{ minHeight: '300px' }}>
+      <div className="flex justify-between items-center h-8">
+        <Skeleton className="h-4 w-24" />
+        <Skeleton className="h-4 w-24" />
+      </div>
+      <div className="flex-1 flex items-center justify-center" style={{ height: 'calc(100% - 8px)' }}>
+        <div className="w-full h-full relative">
+          <Skeleton className="absolute bottom-0 w-full h-[80%] rounded-md opacity-70" />
+          <div className="absolute bottom-0 w-full flex justify-between">
+            {[...Array(5)].map((_, i) => (
+              <Skeleton key={i} className="h-3 w-12" />
+            ))}
+          </div>
+          <div className="absolute h-[80%] left-0 flex flex-col justify-between">
+            {[...Array(4)].map((_, i) => (
+              <Skeleton key={i} className="h-3 w-10" />
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 
   if (loading) {
     return (
@@ -288,7 +337,6 @@ export default function WeightHistory() {
               <CardTitle>Weight History</CardTitle>
               <CardDescription className="text-red-500">{error}</CardDescription>
             </div>
-            <Scale className="h-6 w-6 text-blue-500" />
           </div>
         </CardHeader>
       </Card>
@@ -315,58 +363,61 @@ export default function WeightHistory() {
           </div>
           <div className="flex flex-col md:flex-row items-start md:items-center gap-3">
             {renderFilterControls()}
-            <Scale className="hidden md:block h-6 w-6 text-dark-500 mt-1" />
           </div>
         </div>
       </CardHeader>
       <Separator className="my-1" />
       <CardContent>
-        {measurements.length > 0 ? (
-          <ChartContainer config={{ weight: { label: "Weight" } }} className="h-[300px] w-full">
-            <LineChart
-              data={measurements}
-            >
-              <CartesianGrid strokeDasharray="3 3" opacity={0.2} vertical={false} />
-              <XAxis 
-                dataKey="date" 
-                tickLine={true}
-                axisLine={true}
-                tickMargin={8}
-                tickFormatter={(value) => value.split(',')[0]} 
-              />
-              <YAxis 
-                domain={[minWeight, maxWeight]}
-                tickLine={true}
-                axisLine={true}
-                tickMargin={8}
-                tickFormatter={(value) => `${value} kg`}
-              />
-              <ChartTooltip 
-                cursor={false}
-                content={<ChartTooltipContent 
-                  labelFormatter={(label) => `Measured on ${label}`}
-                  valueFormatter={(value) => `${value} kg`}
-                />}
-              />
-              <Line 
-                type="monotone" 
-                dataKey="weight" 
-                stroke="#e76e50" 
-                strokeWidth={2}
-                dot={{ fill: '#e76e50', r: 3 }}
-                activeDot={{ r: 5, stroke: '#e76e50', strokeWidth: 2 }}
-              />
-            </LineChart>
-          </ChartContainer>
-        ) : (
-          <div className="flex flex-col items-center justify-center min-h-[200px]">
-            <p className="text-center text-sm text-muted-foreground py-4">
-              {allMeasurements.length > 0 
-                ? "No measurements found for the selected date range" 
-                : "Add your first weight measurement to start tracking your progress"}
-            </p>
-          </div>
-        )}
+        <div className="h-[300px]" style={{ minHeight: '300px' }}>
+          {chartLoading ? (
+            <ChartSkeleton />
+          ) : measurements.length > 0 ? (
+            <ChartContainer config={{ weight: { label: "Weight" } }} className="h-[300px] w-full">
+              <LineChart
+                data={measurements}
+              >
+                <CartesianGrid strokeDasharray="3 3" opacity={0.2} vertical={false} />
+                <XAxis 
+                  dataKey="date" 
+                  tickLine={true}
+                  axisLine={true}
+                  tickMargin={8}
+                  tickFormatter={(value) => value.split(',')[0]} 
+                />
+                <YAxis 
+                  domain={[minWeight, maxWeight]}
+                  tickLine={true}
+                  axisLine={true}
+                  tickMargin={8}
+                  tickFormatter={(value) => `${value} kg`}
+                />
+                <ChartTooltip 
+                  cursor={false}
+                  content={<ChartTooltipContent 
+                    labelFormatter={(label) => `Measured on ${label}`}
+                    valueFormatter={(value) => `${value} kg`}
+                  />}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="weight" 
+                  stroke="#e76e50" 
+                  strokeWidth={2}
+                  dot={{ fill: '#e76e50', r: 3 }}
+                  activeDot={{ r: 5, stroke: '#e76e50', strokeWidth: 2 }}
+                />
+              </LineChart>
+            </ChartContainer>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full">
+              <p className="text-center text-sm text-muted-foreground py-4">
+                {allMeasurements.length > 0 
+                  ? "No measurements found for the selected date range" 
+                  : "Add your first weight measurement to start tracking your progress"}
+              </p>
+            </div>
+          )}
+        </div>
       </CardContent>
       <Separator className="my-1" />
       {trend.direction && measurements.length >= 2 && (
