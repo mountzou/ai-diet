@@ -9,7 +9,6 @@ import { getFirestoreDb } from "@/lib/firebase"
 import { doc, setDoc, collection, getDocs, deleteDoc, query, orderBy, where, onSnapshot } from "firebase/firestore"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { Calendar } from "@/components/ui/calendar"
 import {
   Card, CardContent, CardDescription, CardFooter,
   CardHeader, CardTitle
